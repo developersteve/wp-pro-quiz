@@ -19,8 +19,22 @@ class WpProQuiz_View_QuestionEdit extends WpProQuiz_View_View {
 ?>
 <div class="wrap wpProQuiz_questionEdit">
 	<h2 style="margin-bottom: 10px;"><?php echo $this->header; ?></h2>
-	<a class="button-secondary" href="admin.php?page=wpProQuiz&module=question&action=show&quiz_id=<?php echo $this->question->getQuizId(); ?>"><?php _e('back to overview', 'wp-pro-quiz'); ?></a>
-	<form action="" method="POST">
+	<!-- <form action="admin.php?page=wpProQuiz&module=question&action=show&quiz_id=<?php echo $this->quiz->getId(); ?>" method="POST"> -->
+	<form action="admin.php?page=wpProQuiz&module=question&action=addEdit&quiz_id=<?php echo $this->quiz->getId(); ?>&questionId=<?php echo $this->question->getId(); ?>" method="POST">
+		<a style="float: left;" class="button-secondary" href="admin.php?page=wpProQuiz&module=question&action=show&quiz_id=<?php echo $this->quiz->getId(); ?>"><?php _e('back to overview', 'wp-pro-quiz'); ?></a>
+		<div style="float: right;">
+			<select name="templateLoadId">
+				<?php 
+					foreach($this->templates as $template) {
+						echo '<option value="', $template->getTemplateId(), '">', esc_html($template->getName()), '</option>';
+					}
+				?>
+			</select>
+			<input type="submit" name="templateLoad" value="<?php _e('load template', 'wp-pro-quiz'); ?>" class="button-primary">
+		</div>
+		<div style="clear: both;"></div>
+		<!-- <input type="hidden" value="edit" name="hidden_action">
+		<input type="hidden" value="<?php echo $this->question->getId(); ?>" name="questionId">-->
 		<div id="poststuff">
 			<div class="postbox">
 				<h3 class="hndle"><?php _e('Title', 'wp-pro-quiz'); ?> <?php _e('(optional)', 'wp-pro-quiz'); ?></h3>
@@ -192,6 +206,7 @@ class WpProQuiz_View_QuestionEdit extends WpProQuiz_View_View {
 					</label>
 				</div>
 			</div>
+			<?php $this->singleChoiceOptions($this->data['classic_answer']); ?>
 			<div class="postbox">
 				<h3 class="hndle"><?php _e('Answers', 'wp-pro-quiz'); ?> <?php _e('(required)', 'wp-pro-quiz'); ?></h3>
 				<div class="inside answer_felder">
@@ -220,17 +235,16 @@ class WpProQuiz_View_QuestionEdit extends WpProQuiz_View_View {
 						<p class="description">
 							<?php _e('You can create sort elements with empty criteria, which can\'t be assigned by user.', 'wp-pro-quiz'); ?>
 						</p>
-                        <br />
-                        <label for="matrix_sort_answer_criteria_width">Percentage width of criteria table column</label>
-                        <p class="description">
-                            Allows adjustment of the left column's width, and the right column will auto-fill the rest of the available space.  Increase this to allow
-                            accommodate longer criterion text.  Defaults to 20%.
-                        </p>
-                        <p>
-                            <?php $criteria_width = $this->question->getMatrixSortAnswerCriteriaWidth(); ?>
-                            <input name="matrixSortAnswerCriteriaWidth" class="number-text" value="<?php echo (int)$criteria_width > 0 ? (int)$criteria_width : 20; ?>" type="number" min="1" max="99" step="1">%
-                        </p>
-                        <br />
+						<br>
+						<label>
+							<?php _e('Percentage width of criteria table column:', 'wp-pro-quiz'); ?>
+							<?php $msacwValue = $this->question->getMatrixSortAnswerCriteriaWidth() > 0 ? $this->question->getMatrixSortAnswerCriteriaWidth() : 20; ?>
+							<input type="number" min="1" max="99" step="1" name="matrixSortAnswerCriteriaWidth" value="<?php echo $msacwValue; ?>">%
+						</label>
+						<p class="description">
+							<?php _e('Allows adjustment of the left column\'s width, and the right column will auto-fill the rest of the available space. Increase this to allow accommodate longer criterion text. Defaults to 20%.', 'wp-pro-quiz'); ?>
+						</p>
+						<br>
 						<ul class="answerList">
 							<?php $this->matrixSortingChoice($this->data['matrix_sort_answer']); ?>
 						</ul>
@@ -244,7 +258,25 @@ class WpProQuiz_View_QuestionEdit extends WpProQuiz_View_View {
 					</div>
 				</div>
 			</div>
-			<input type="submit" name="submit" id="saveQuestion" class="button-primary" value="<?php _e('Save', 'wp-pro-quiz'); ?>">			
+			
+			<div style="float: left;">
+				<input type="submit" name="submit" id="saveQuestion" class="button-primary" value="<?php _e('Save', 'wp-pro-quiz'); ?>">
+			</div>
+			<div style="float: right;">
+				<input type="text" placeholder="<?php _e('template name', 'wp-pro-quiz'); ?>" class="regular-text" name="templateName" style="border: 1px solid rgb(255, 134, 134);">
+				<select name="templateSaveList">
+					<option value="0">=== <?php _e('Create new template', 'wp-pro-quiz'); ?> === </option>
+					<?php 
+						foreach($this->templates as $template) {
+							echo '<option value="', $template->getTemplateId(), '">', esc_html($template->getName()), '</option>';
+						}
+					?>
+				</select>
+				
+				<input type="submit" name="template" class="button-primary" id="wpProQuiz_saveTemplate" value="<?php _e('Save as template', 'wp-pro-quiz'); ?>">
+			</div>
+			<div style="clear: both;"></div>
+					
 		</div>
 	</form>
 </div>
@@ -470,5 +502,222 @@ class WpProQuiz_View_QuestionEdit extends WpProQuiz_View_View {
 			wp_editor($single->getAnswer(), 'assessment', array('textarea_rows' => 10, 'textarea_name' => 'answerData[assessment][answer]'));
 		?>
 <?php 
+	}
+	
+	private function singleChoiceOptions($data) {
+?>
+	<div class="postbox" id="singleChoiceOptions">
+		<h3 class="hndle"><?php _e('Single choice options', 'wp-pro-quiz'); ?></h3>
+		<div class="inside">
+			<p class="description">
+				<?php _e('If "Different points for each answer" is activated, you can activate a special mode.<br> This changes the calculation of the points', 'wp-pro-quiz'); ?>
+			</p>
+			<label>
+				<input type="checkbox" name="answerPointsDiffModusActivated" value="1" <?php $this->checked($this->question->isAnswerPointsDiffModusActivated()); ?>>
+				<?php _e('Different points - modus 2 activate', 'wp-pro-quiz'); ?>
+			</label>
+			<br><br>
+			<p class="description">
+				<?php _e('Disables the distinction between correct and incorrect.', 'wp-pro-quiz'); ?><br>
+			</p>
+			<label>
+				<input type="checkbox" name=disableCorrect value="1" <?php $this->checked($this->question->isDisableCorrect()); ?>>
+				<?php _e('disable correct and incorrent', 'wp-pro-quiz'); ?>
+			</label>
+			
+			<div style="padding-top: 20px;">
+				<a href="#" id="clickPointDia"><?php _e('Explanation of points calculation', 'wp-pro-quiz'); ?></a>
+				<?php $this->answerPointDia(); ?>
+			</div>
+		</div>
+	</div>
+
+<?php
+	}
+	
+	private function answerPointDia() {
+?>
+<style>
+.pointDia td {
+	border: 1px solid #9E9E9E;
+	padding: 8px;
+}
+</style>
+	<table style="border-collapse: collapse; display: none; margin-top: 10px;" class="pointDia">
+	  <tr>
+	    <th>
+	    	<?php _e('"Different points for each answer" enabled'); ?> 
+	    	<br>
+	    	<?php _e('"Different points - mode 2" disable', 'wp-pro-quiz'); ?>
+	    </th>
+	    <th>
+	    	<?php _e('"Different points for each answer" enabled'); ?> 
+	    	<br>
+	    	<?php _e('"Different points - mode 2" enabled', 'wp-pro-quiz'); ?>
+	    </th>
+	  </tr>
+	  <tr>
+	  	<td>
+	  		<?php 
+	    	echo nl2br('Question - Single Choice - 3 Answers - Diff points mode
+
+			A=3 Points [correct]
+			B=2 Points [incorrect]
+			C=1 Point [incorrect]
+			
+			= 6 Points
+			'); ?>
+	  	
+	  	</td>
+	  	<td>
+	  		<?php 
+	    	echo nl2br('Question - Single Choice - 3 Answers - Modus 2
+
+			A=3 Points [correct]
+			B=2 Points [incorrect]
+			C=1 Point [incorrect]
+			
+			= 3 Points
+			'); ?>
+	  	</td>
+	  </tr>
+	  <tr>
+	  	<td>
+	  		<?php 
+	    	echo nl2br('~~~ User 1: ~~~
+			
+			A=checked
+			B=unchecked
+			C=unchecked
+			
+			Result:
+			A=correct and checked (correct) = 3 Points
+			B=incorrect and unchecked (correct) = 2 Points
+			C=incorrect and unchecked (correct) = 1 Points
+			
+			= 6 / 6 Points 100%
+			'); ?>
+	  	
+	  	</td>
+	  	<td>
+	  		<?php 
+	    	echo nl2br('~~~ User 1: ~~~
+			
+			A=checked
+			B=unchecked
+			C=unchecked
+			
+			Result:
+			A=checked = 3 Points
+			B=unchecked = 0 Points
+			C=unchecked = 0 Points
+			
+			= 3 / 3 Points 100%'); ?>
+	  	</td>
+	  </tr>
+	  <tr>
+	  	<td>
+	  		<?php 
+	    	echo nl2br('~~~ User 2: ~~~
+			
+			A=unchecked
+			B=checked
+			C=unchecked
+			
+			Result:
+			A=correct and unchecked (incorrect) = 0 Points
+			B=incorrect and checked (incorrect) = 0 Points
+			C=incorrect and uncecked (correct) = 1 Points
+			
+			= 1 / 6 Points 16.67%
+			'); ?>
+	  	
+	  	</td>
+	  	<td>
+	  		<?php 
+	    	echo nl2br('~~~ User 2: ~~~
+			
+			A=unchecked
+			B=checked
+			C=unchecked
+			
+			Result:
+			A=unchecked = 0 Points
+			B=checked = 2 Points
+			C=uncecked = 0 Points
+			
+			= 2 / 3 Points 66,67%'); ?>
+	  	</td>
+	  </tr>
+	  <tr>
+	  	<td>
+	  		<?php 
+	    	echo nl2br('~~~ User 3: ~~~
+			
+			A=unchecked
+			B=unchecked
+			C=checked
+			
+			Result:
+			A=correct and unchecked (incorrect) = 0 Points
+			B=incorrect and unchecked (correct) = 2 Points
+			C=incorrect and checked (incorrect) = 0 Points
+			
+			= 2 / 6 Points 33.33%
+			'); ?>
+	  	
+	  	</td>
+	  	<td>
+	  		<?php 
+	    	echo nl2br('~~~ User 3: ~~~
+			
+			A=unchecked
+			B=unchecked
+			C=checked
+			
+			Result:
+			A=unchecked = 0 Points
+			B=unchecked = 0 Points
+			C=checked = 1 Points
+			
+			= 1 / 3 Points 33,33%'); ?>
+	  	</td>
+	  </tr>
+	  <tr>
+	  	<td>
+	  		<?php 
+	    	echo nl2br('~~~ User 4: ~~~
+			
+			A=unchecked
+			B=unchecked
+			C=unchecked
+			
+			Result:
+			A=correct and unchecked (incorrect) = 0 Points
+			B=incorrect and unchecked (correct) = 2 Points
+			C=incorrect and unchecked (correct) = 1 Points
+			
+			= 3 / 6 Points 50%
+			'); ?>
+	  	
+	  	</td>
+	  	<td>
+	  		<?php 
+	    	echo nl2br('~~~ User 4: ~~~
+			
+			A=unchecked
+			B=unchecked
+			C=unchecked
+			
+			Result:
+			A=unchecked = 0 Points
+			B=unchecked = 0 Points
+			C=unchecked = 0 Points
+			
+			= 0 / 3 Points 0%'); ?>
+	  	</td>
+	  </tr>
+	</table>
+<?php
 	}
 }

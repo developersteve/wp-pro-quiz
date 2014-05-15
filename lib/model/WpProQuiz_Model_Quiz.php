@@ -26,18 +26,21 @@ class WpProQuiz_Model_Quiz extends WpProQuiz_Model_Model {
 	const QUIZ_EMAIL_NOTE_REG_USER = 1;
 	const QUIZ_EMAIL_NOTE_ALL = 2;
 	
-	protected $_id;
-	protected $_name;
-	protected $_text;
+	const QUIZ_FORM_POSITION_START = 0;
+	const QUIZ_FORM_POSITION_END = 1;
+	
+	protected $_id = 0;
+	protected $_name = '';
+	protected $_text = '';
 	protected $_resultText;
-	protected $_titleHidden;
+	protected $_titleHidden = false;
 	protected $_btnRestartQuizHidden = false;
 	protected $_btnViewQuestionHidden = false;
-	protected $_questionRandom;
-	protected $_answerRandom;
+	protected $_questionRandom = false;
+	protected $_answerRandom = false;
 	protected $_timeLimit = 0;
-	protected $_statisticsOn;
-	protected $_statisticsIpLock;
+	protected $_statisticsOn = false;
+	protected $_statisticsIpLock = 1440;
 	protected $_resultGradeEnabled = false;
 	protected $_showPoints = false;
 	protected $_quizRunOnce = false;
@@ -83,26 +86,40 @@ class WpProQuiz_Model_Quiz extends WpProQuiz_Model_Model {
 	protected $_hideResultQuizTime = false;
 	protected $_hideResultPoints = false;
 	
+	//0.25
+	protected $_autostart = false;
+	protected $_forcingQuestionSolve = false;
+	protected $_hideQuestionPositionOverview = false;
+	protected $_hideQuestionNumbering = false;
+	
+	//0.27
+	protected $_formActivated = false;
+	protected $_formShowPosition = 0;
+	protected $_startOnlyRegisteredUser = false;
+	protected $_questionsPerPage = 0;
+	protected $_sortCategories = false;
+	protected $_showCategory = false;
+	
+	public function setId($_id) {
+		$this->_id = (int)$_id;
+		return $this;
+	}
+	
 	public function getId() {
 		return $this->_id;
 	}
-	
-	public function setId($id) {
-		$this->_id = $id;
+		
+	public function setName($_name) {
+		$this->_name = (string)$_name;
 		return $this;
 	}
 	
 	public function getName() {
 		return $this->_name;
 	}
-	
-	public function setName($name) {
-		$this->_name = $name;
-		return $this;
-	}
-
-	public function setText($text) {
-		$this->_text = $text;
+		
+	public function setText($_text) {
+		$this->_text = (string)$_text;
 		return $this;
 	}
 	
@@ -147,7 +164,7 @@ class WpProQuiz_Model_Quiz extends WpProQuiz_Model_Model {
 	}
 	
 	public function setTimeLimit($_timeLimit) {
-		$this->_timeLimit = $_timeLimit;
+		$this->_timeLimit = (int)$_timeLimit;
 		return $this;
 	}
 	
@@ -526,5 +543,95 @@ class WpProQuiz_Model_Quiz extends WpProQuiz_Model_Model {
 	
 	public function isHideResultPoints() {
 		return $this->_hideResultPoints;
+	}
+	
+	public function setAutostart($_autostart) {
+		$this->_autostart = (bool)$_autostart;
+		return $this;
+	}
+	
+	public function isAutostart() {
+		return $this->_autostart;
+	}
+	
+	public function setForcingQuestionSolve($_forcingQuestionSolve) {
+		$this->_forcingQuestionSolve = (bool)$_forcingQuestionSolve;
+		return $this;
+	}
+	
+	public function isForcingQuestionSolve() {
+		return $this->_forcingQuestionSolve;
+	}
+	
+	public function setHideQuestionPositionOverview($_hideQuestionPositionOverview) {
+		$this->_hideQuestionPositionOverview = (bool)$_hideQuestionPositionOverview;
+		return $this;
+	}
+	
+	public function isHideQuestionPositionOverview() {
+		return $this->_hideQuestionPositionOverview;
+	}
+	
+	public function setHideQuestionNumbering($_hideQuestionNumbering) {
+		$this->_hideQuestionNumbering = (bool)$_hideQuestionNumbering;
+		return $this;
+	}
+	
+	public function isHideQuestionNumbering() {
+		return $this->_hideQuestionNumbering;
+	}
+	
+	public function setFormActivated($_formActivated) {
+		$this->_formActivated = (bool)$_formActivated;
+		return $this;
+	}
+	
+	public function isFormActivated() {
+		return $this->_formActivated;
+	}
+	
+	public function setFormShowPosition($_formShowPosition) {
+		$this->_formShowPosition = (int)$_formShowPosition;
+		return $this;
+	}
+	
+	public function getFormShowPosition() {
+		return $this->_formShowPosition;
+	}
+	
+	public function setStartOnlyRegisteredUser($_startOnlyRegisteredUser) {
+		$this->_startOnlyRegisteredUser = (bool)$_startOnlyRegisteredUser;
+		return $this;
+	}
+	
+	public function isStartOnlyRegisteredUser() {
+		return $this->_startOnlyRegisteredUser;
+	}
+	
+	public function setQuestionsPerPage($_questionsPerPage) {
+		$this->_questionsPerPage = (int)$_questionsPerPage;
+		return $this;
+	}
+	
+	public function getQuestionsPerPage() {
+		return $this->_questionsPerPage;
+	}
+	
+	public function setSortCategories($_sortCategories) {
+		$this->_sortCategories = (bool)$_sortCategories;
+		return $this;
+	}
+	
+	public function isSortCategories() {
+		return $this->_sortCategories;
+	}
+	
+	public function setShowCategory($_showCategory) {
+		$this->_showCategory = (bool)$_showCategory;
+		return $this;
+	}
+	
+	public function isShowCategory() {
+		return $this->_showCategory;
 	}
 }

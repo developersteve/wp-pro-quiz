@@ -38,11 +38,23 @@ class WpProQuiz_Controller_Front {
 				WPPROQUIZ_VERSION,
 				$footer
 			);
-			
+
 			wp_localize_script('wpProQuiz_front_javascript', 'WpProQuizGlobal', array(
 				'ajaxurl' => admin_url('admin-ajax.php'),
-				'loadData' => __('Loading', 'wp-pro-quiz')
+				'loadData' => __('Loading', 'wp-pro-quiz'),
+				'questionNotSolved' => __('You must answer this question.', 'wp-pro-quiz'),
+				'questionsNotSolved' => __('You must answer all questions before you can completed the quiz.', 'wp-pro-quiz'),
+				'fieldsNotFilled' => __('All fields have to be filled.', 'wp-pro-quiz'),
+				'userId' => get_current_user_id()
 			));
+
+			wp_enqueue_script(
+				'jquery-cookie',
+				plugins_url('js/jquery.cookie.js', WPPROQUIZ_FILE),
+				array('jquery-ui-sortable'),
+				'1.4.0',
+				$footer
+			);
 		}
 		
 		if($toplist) {
@@ -57,7 +69,10 @@ class WpProQuiz_Controller_Front {
 			if(!wp_script_is('wpProQuiz_front_javascript'))
 				wp_localize_script('wpProQuiz_front_javascript_toplist', 'WpProQuizGlobal', array(
 					'ajaxurl' => admin_url('admin-ajax.php'),
-					'loadData' => __('Loading', 'wp-pro-quiz')
+					'loadData' => __('Loading', 'wp-pro-quiz'),
+					'questionNotSolved' => __('You must answer this question.', 'wp-pro-quiz'),
+					'questionsNotSolved' => __('You must answer all questions before you can completed the quiz.', 'wp-pro-quiz'),
+					'fieldsNotFilled' => __('All fields have to be filled.', 'wp-pro-quiz')
 				));
 		}
 		
@@ -103,8 +118,11 @@ class WpProQuiz_Controller_Front {
 		$quizMapper = new WpProQuiz_Model_QuizMapper();
 		$questionMapper = new WpProQuiz_Model_QuestionMapper();
 		$categoryMapper = new WpProQuiz_Model_CategoryMapper();
+		$formMapper = new WpProQuiz_Model_FormMapper();
 		
 		$quiz = $quizMapper->fetch($id);
+		
+		$maxQuestion = false;
 
 		if($quiz->isShowMaxQuestion() && $quiz->getShowMaxQuestionValue() > 0) {
 			
@@ -115,8 +133,9 @@ class WpProQuiz_Controller_Front {
 				
 				$value = ceil($count * $value / 100);
 			}
-			
+
 			$question = $questionMapper->fetchAll($id, true, $value);
+			$maxQuestion = true;
 			
 		} else {
 			$question = $questionMapper->fetchAll($id);
@@ -131,8 +150,12 @@ class WpProQuiz_Controller_Front {
 		$view->quiz = $quiz;
 		$view->question = $question;
 		$view->category = $categoryMapper->fetchByQuiz($quiz->getId());
+		$view->forms = $formMapper->fetch($quiz->getId());
 		
-		$view->show();		
+		if($maxQuestion)
+			$view->showMaxQuestion();
+		else
+			$view->show();		
 	}
 	
 	public function shortcodeToplist($attr) {
@@ -181,5 +204,45 @@ class WpProQuiz_Controller_Front {
 		$mapper = new WpProQuiz_Model_GlobalSettingsMapper();
 		
 		$this->_settings = $mapper->fetchAll();
+	}
+	
+	public static function ajaxQuizLoadData($data, $func) {
+		$id = $data['quizId'];
+		
+		$view = new WpProQuiz_View_FrontQuiz();
+		
+		$quizMapper = new WpProQuiz_Model_QuizMapper();
+		$questionMapper = new WpProQuiz_Model_QuestionMapper();
+		$categoryMapper = new WpProQuiz_Model_CategoryMapper();
+		$formMapper = new WpProQuiz_Model_FormMapper();
+		
+		$quiz = $quizMapper->fetch($id);
+		
+		if($quiz->isShowMaxQuestion() && $quiz->getShowMaxQuestionValue() > 0) {
+				
+			$value = $quiz->getShowMaxQuestionValue();
+				
+			if($quiz->isShowMaxQuestionPercent()) {
+				$count = $questionMapper->count($id);
+		
+				$value = ceil($count * $value / 100);
+			}
+				
+			$question = $questionMapper->fetchAll($id, true, $value);
+				
+		} else {
+			$question = $questionMapper->fetchAll($id);
+		}
+		
+		if(empty($quiz) || empty($question)) {
+			return null;
+		}
+		
+		$view->quiz = $quiz;
+		$view->question = $question;
+		$view->category = $categoryMapper->fetchByQuiz($quiz->getId());
+		$view->forms = $formMapper->fetch($quiz->getId());
+		
+		return json_encode($view->getQuizData());
 	}
 }
